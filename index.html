@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiblioTech - Full-Stack Online Bookstore</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-full flex flex-col selection:bg-indigo-600 selection:text-white">
+
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('catalog')">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                    <i class="fa-solid fa-book-open text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold bg-gradient-to-r from-indigo-600 to-violet-700 bg-clip-text text-transparent">BiblioTech</span>
+                    <!--<span class="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Full-Stack Edition</span> -->
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="hidden md:flex items-center flex-1 max-w-md mx-8">
+                <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Search by title, author, or category..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- Orders Tab Button (Visible when logged in) -->
+                <button onclick="switchView('orders')" id="navOrdersBtn" class="hidden p-2.5 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all items-center space-x-2">
+                    <i class="fa-solid fa-box-archive text-lg"></i>
+                    <span class="hidden sm:inline text-sm font-medium">My Orders</span>
+                </button>
+
+                <!-- Cart Button -->
+                <button onclick="toggleCartModal(true)" class="relative p-2.5 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-bag-shopping text-xl"></i>
+                    <span class="hidden sm:inline text-sm font-medium">Cart</span>
+                    <span id="cartBadge" class="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-sm">0</span>
+                </button>
+
+                <!-- Admin Button -->
+                <div id="adminNavContainer" class="hidden">
+                    <button onclick="switchView('admin')" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span class="hidden sm:inline">Admin Panel</span>
+                    </button>
+                </div>
+
+                <!-- Auth Section -->
+                <div id="userAccountSection">
+                    <button onclick="openAuthModal('login')" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all flex items-center space-x-2">
+                        <i class="fa-regular fa-user"></i>
+                        <span>Login</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Search -->
+        <div class="md:hidden px-4 pb-3">
+            <div class="relative w-full">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" oninput="handleSearch(this.value)" placeholder="Search books..." class="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- VIEW 1: CATALOG HOME -->
+        <section id="catalogView" class="space-y-8">
+            <!-- Hero Banner -->
+            <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-900 via-indigo-800 to-violet-900 text-white shadow-xl">
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#e0e7ff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="relative px-6 py-12 sm:py-16 md:px-12 flex flex-col md:flex-row items-center justify-between">
+                    <div class="max-w-xl space-y-4 text-center md:text-left">
+                        <!-- <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 backdrop-blur-sm border border-indigo-400/20">
+                            <i class="fa-solid fa-bolt mr-1.5 text-amber-300"></i> Full-Stack REST Backend Active
+                        </span> -->
+                        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                            Your Personal <br>Digital Bookstore.
+                        </h1>
+                        <p class="text-indigo-200 text-sm sm:text-base">
+                            Explore thousands of professional titles, order seamlessly, track past purchases, and manage inventory with instant persistence.
+                        </p>
+                        <div class="pt-2 flex flex-wrap justify-center md:justify-start gap-3">
+                            <button onclick="scrollToCatalog()" class="px-6 py-3 bg-white text-indigo-900 font-semibold rounded-xl shadow-lg hover:bg-indigo-50 transition-all text-sm">
+                                Browse Catalog
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-8 md:mt-0 flex space-x-4">
+                        <div class="w-36 sm:w-48 h-52 sm:h-72 rounded-2xl shadow-2xl overflow-hidden transform rotate-3 hover:rotate-0 transition-transform duration-300 border-4 border-white/10">
+                            <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80" alt="Book" class="w-full h-full object-cover">
+                        </div>
+                        <div class="w-36 sm:w-48 h-52 sm:h-72 rounded-2xl shadow-2xl overflow-hidden transform -rotate-3 hover:rotate-0 transition-transform duration-300 border-4 border-white/10 mt-6">
+                            <img src="https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=400&q=80" alt="Book" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories & Count -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                    <span>Book Catalog</span>
+                    <span id="bookCountBadge" class="ml-3 text-xs font-semibold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">0 books</span>
+                </h2>
+                <!-- Category Tabs -->
+                <div id="categoryTabs" class="flex flex-wrap gap-2">
+                    <button onclick="filterCategory('All')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white shadow-sm transition-all">All</button>
+                    <button onclick="filterCategory('Fiction')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">Fiction</button>
+                    <button onclick="filterCategory('Tech')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">Tech</button>
+                    <button onclick="filterCategory('Science')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">Science</button>
+                    <button onclick="filterCategory('Biography')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">Biography</button>
+                </div>
+            </div>
+
+            <!-- Books Grid -->
+            <div id="booksGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyCatalogState" class="hidden text-center py-16">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-ghost"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">No books found</h3>
+                <p class="text-sm text-slate-500 mt-1">Try adjusting your search query or category filter.</p>
+            </div>
+        </section>
+
+        <!-- VIEW 2: ORDER HISTORY -->
+        <section id="ordersView" class="hidden space-y-6">
+            <div class="border-b border-slate-200 pb-5">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-box-archive mr-3 text-indigo-600"></i> Order History & Receipts
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">View all your previous purchases and order statuses.</p>
+            </div>
+            <div id="ordersContainer" class="space-y-4">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- VIEW 3: ADMIN PANEL -->
+        <section id="adminView" class="hidden space-y-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-gauge-high mr-3 text-indigo-600"></i> Admin Inventory Dashboard
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">Manage bookstore inventory, stock counts, and add new titles.</p>
+                </div>
+                <button onclick="openAddBookModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-sm shadow-indigo-200 transition-all flex items-center space-x-2 text-sm">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add New Book</span>
+                </button>
+            </div>
+
+            <!-- Admin Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Titles</p>
+                        <h3 id="statTotalBooks" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Stock Units</p>
+                        <h3 id="statTotalStock" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Orders Placed</p>
+                        <h3 id="statTotalOrders" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">Inventory Management Table</h3>
+                    <span class="text-xs text-slate-500 font-medium">REST Simulated Persistence</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-6">Book Details</th>
+                                <th class="py-3.5 px-6">Category</th>
+                                <th class="py-3.5 px-6">Price</th>
+                                <th class="py-3.5 px-6">Stock Level</th>
+                                <th class="py-3.5 px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminInventoryTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 1. CART DRAWER MODAL -->
+    <div id="cartModal" class="fixed inset-0 z-50 overflow-hidden hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="toggleCartModal(false)"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+                <div class="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-bag-shopping text-indigo-600 text-lg"></i>
+                        <h2 class="text-lg font-bold text-slate-800">Shopping Cart</h2>
+                    </div>
+                    <button onclick="toggleCartModal(false)" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-200/60 transition-all">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div id="cartItemsList" class="flex-1 overflow-y-auto p-6 space-y-4 divide-y divide-slate-100">
+                    <!-- Populated -->
+                </div>
+
+                <div class="p-6 border-t border-slate-200 bg-slate-50 space-y-4">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between text-slate-600">
+                            <span>Subtotal</span>
+                            <span id="cartSubtotal" class="font-semibold text-slate-800">₹0.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Shipping</span>
+                            <span class="font-semibold text-emerald-600">Free</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
+                            <span>Total</span>
+                            <span id="cartTotal" class="text-indigo-600">₹0.00</span>
+                        </div>
+                    </div>
+                    <button onclick="checkoutOrder()" id="checkoutBtn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center space-x-2">
+                        <span>Checkout & Place Order</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. AUTHENTICATION MODAL (LOGIN / REGISTER) -->
+    <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeAuthModal()"></div>
+        <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 overflow-hidden">
+            <div class="absolute top-4 right-4">
+                <button onclick="closeAuthModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl shadow-inner">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h3 id="authModalTitle" class="text-xl font-bold text-slate-900">Welcome Back</h3>
+                <p class="text-xs text-slate-500 mt-1">Sign in or register for full-stack access.</p>
+            </div>
+
+            <!-- Tab Switcher for Login/Register -->
+            <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl mb-6 text-xs font-semibold">
+                <button onclick="setAuthTab('login')" id="tabLoginBtn" class="py-2 rounded-lg bg-white text-indigo-600 shadow-sm transition-all">Sign In</button>
+                <button onclick="setAuthTab('register')" id="tabRegisterBtn" class="py-2 rounded-lg text-slate-500 hover:text-slate-800 transition-all">Register</button>
+            </div>
+
+            <!-- <div class="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3 mb-5 text-[11px] text-indigo-800 flex items-start space-x-2.5">
+                <i class="fa-solid fa-circle-info mt-0.5 text-indigo-600"></i>
+                ƒ<div>
+                    <span class="font-semibold block mb-0.5">Admin Demo Credentials:</span>
+                    Email: <code class="bg-white px-1 py-0.5 rounded font-mono font-bold">admin@bibliotech.com</code> | Pass: <code class="bg-white px-1 py-0.5 rounded font-mono font-bold">admin123</code>
+                </div> 
+            </div> -->
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="registerNameGroup" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Full Name</label>
+                    <input type="text" id="authName" placeholder="Gayatri Kamlay" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <input type="email" id="authEmail" required placeholder="user@example.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Password</label>
+                    <input type="password" id="authPassword" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. ADD BOOK MODAL (ADMIN) -->
+    <div id="addBookModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeAddBookModal()"></div>
+        <div class="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 overflow-hidden">
+            <div class="absolute top-4 right-4">
+                <button onclick="closeAddBookModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-1 flex items-center">
+                <i class="fa-solid fa-book-medical mr-2.5 text-indigo-600"></i> Add New Book to REST Backend
+            </h3>
+            <p class="text-xs text-slate-500 mb-6">Create a new book record persisted immediately.</p>
+            
+            <form onsubmit="handleAddNewBook(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Book Title</label>
+                    <input type="text" id="newTitle" required placeholder="e.g. Node.js Enterprise Architecture" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Author</label>
+                        <input type="text" id="newAuthor" required placeholder="e.g. Gayatri Kamlay" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Category</label>
+                        <select id="newCategory" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Fiction">Fiction</option>
+                            <option value="Tech">Tech</option>
+                            <option value="Science">Science</option>
+                            <option value="Biography">Biography</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Price (₹)</label>
+                        <input type="number" step="0.01" id="newPrice" required placeholder="29.99" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Initial Stock</label>
+                        <input type="number" id="newStock" required placeholder="15" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Cover Image URL</label>
+                    <input type="url" id="newImage" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition-all text-sm mt-2">
+                    Save Book to Backend Database
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none"></div>
+
+    <script>
+        /* ==========================================================
+           1. SIMULATED REST BACKEND ENGINE (Express + SQLite over LocalStorage)
+           ========================================================== */
+        const initialBooks = [
+            { id: 1, title: "Clean Code: Handbook of Agile Software Craftsmanship", author: "Robert C. Martin", category: "Tech", price: 3400, stock: 12, image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80" },
+            { id: 2, title: "The Pragmatic Programmer", author: "Andrew Hunt & David Thomas", category: "Tech", price: 4250, stock: 8, image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=400&q=80" },
+            { id: 3, title: "Sapiens: A Brief History of Humankind", author: "Yuval Noah Harari", category: "Science", price: 2299, stock: 15, image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=400&q=80" },
+            { id: 4, title: "Dune", author: "Frank Herbert", category: "Fiction", price: 1899, stock: 20, image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=400&q=80" },
+            { id: 5, title: "Atomic Habits", author: "James Clear", category: "Biography", price: 1999, stock: 25, image: "https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=400&q=80" },
+            { id: 6, title: "Design Patterns in Modern JavaScript", author: "Gayatri Kamlay", category: "Tech", price: 3999, stock: 10, image: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=400&q=80" }
+        ];
+
+        const initialUsers = [
+            { id: 1, name: "System Admin", email: "admin@bibliotech.com", password: "admin123", role: "admin" }
+        ];
+
+        // Seed DB if missing
+        if (!localStorage.getItem('db_books')) {
+            localStorage.setItem('db_books', JSON.stringify(initialBooks));
+        }
+        if (!localStorage.getItem('db_users')) {
+            localStorage.setItem('db_users', JSON.stringify(initialUsers));
+        }
+        if (!localStorage.getItem('db_orders')) {
+            localStorage.setItem('db_orders', JSON.stringify([]));
+        }
+
+        // Mock REST API Client Object
+        const ApiClient = {
+            getBooks: async () => {
+                return JSON.parse(localStorage.getItem('db_books')) || [];
+            },
+            addBook: async (bookData) => {
+                let books = JSON.parse(localStorage.getItem('db_books')) || [];
+                const newBook = { id: Date.now(), ...bookData };
+                books.push(newBook);
+                localStorage.setItem('db_books', JSON.stringify(books));
+                return newBook;
+            },
+            updateStock: async (bookId, newStock) => {
+                let books = JSON.parse(localStorage.getItem('db_books')) || [];
+                books = books.map(b => b.id === bookId ? { ...b, stock: newStock } : b);
+                localStorage.setItem('db_books', JSON.stringify(books));
+            },
+            deleteBook: async (bookId) => {
+                let books = JSON.parse(localStorage.getItem('db_books')) || [];
+                books = books.filter(b => b.id !== bookId);
+                localStorage.setItem('db_books', JSON.stringify(books));
+            },
+            login: async (email, password) => {
+                const users = JSON.parse(localStorage.getItem('db_users')) || [];
+                const user = users.find(u => u.email === email && u.password === password);
+                if (!user) throw new Error("Invalid email or password");
+                return user;
+            },
+            register: async (name, email, password) => {
+                let users = JSON.parse(localStorage.getItem('db_users')) || [];
+                if (users.some(u => u.email === email)) throw new Error("Email already registered");
+                const newUser = { id: Date.now(), name, email, password, role: "customer" };
+                users.push(newUser);
+                localStorage.setItem('db_users', JSON.stringify(users));
+                return newUser;
+            },
+            getOrders: async (userId, isAdmin) => {
+                const orders = JSON.parse(localStorage.getItem('db_orders')) || [];
+                if (isAdmin) return orders;
+                return orders.filter(o => o.userId === userId);
+            },
+            createOrder: async (orderData) => {
+                let orders = JSON.parse(localStorage.getItem('db_orders')) || [];
+                const newOrder = { id: 'ORD-' + Math.floor(100000 + Math.random() * 900000), date: new Date().toLocaleString(), ...orderData };
+                orders.unshift(newOrder);
+                localStorage.setItem('db_orders', JSON.stringify(orders));
+                return newOrder;
+            }
+        };
+
+        /* ==========================================================
+           2. FRONTEND STATE & CONTROLLER
+           ========================================================== */
+        let state = {
+            currentUser: JSON.parse(localStorage.getItem('session_user')) || null,
+            cart: JSON.parse(localStorage.getItem('session_cart')) || [],
+            currentCategory: 'All',
+            searchQuery: '',
+            authMode: 'login'
+        };
+
+        window.onload = async function() {
+            updateNavbarState();
+            await renderCatalog();
+            renderCartBadge();
+        };
+
+        function saveFrontendSession() {
+            localStorage.setItem('session_cart', JSON.stringify(state.cart));
+            if (state.currentUser) {
+                localStorage.setItem('session_user', JSON.stringify(state.currentUser));
+            } else {
+                localStorage.removeItem('session_user');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-slate-900 text-white' : 'bg-rose-600 text-white';
+            const icon = type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-exclamation text-rose-200';
+            
+            toast.className = `${bg} px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-sm font-medium transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // View Router
+        async function switchView(viewName) {
+            document.getElementById('catalogView').classList.add('hidden');
+            document.getElementById('ordersView').classList.add('hidden');
+            document.getElementById('adminView').classList.add('hidden');
+
+            if (viewName === 'catalog') {
+                document.getElementById('catalogView').classList.remove('hidden');
+                await renderCatalog();
+            } else if (viewName === 'orders') {
+                if (!state.currentUser) {
+                    openAuthModal('login');
+                    return;
+                }
+                document.getElementById('ordersView').classList.remove('hidden');
+                await renderOrders();
+            } else if (viewName === 'admin') {
+                if (!state.currentUser || state.currentUser.role !== 'admin') {
+                    showToast("Admin access required", "error");
+                    openAuthModal('login');
+                    return;
+                }
+                document.getElementById('adminView').classList.remove('hidden');
+                await renderAdminDashboard();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function scrollToCatalog() {
+            document.getElementById('booksGrid').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Render Catalog Grid
+        async function renderCatalog() {
+            const books = await ApiClient.getBooks();
+            const grid = document.getElementById('booksGrid');
+            const emptyState = document.getElementById('emptyCatalogState');
+            const bookCountBadge = document.getElementById('bookCountBadge');
+
+            let filtered = books.filter(book => {
+                const matchesCat = state.currentCategory === 'All' || book.category.toLowerCase() === state.currentCategory.toLowerCase();
+                const matchesSearch = book.title.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                                      book.author.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                                      book.category.toLowerCase().includes(state.searchQuery.toLowerCase());
+                return matchesCat && matchesSearch;
+            });
+
+            bookCountBadge.innerText = `${filtered.length} books`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(book => `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group">
+                    <div class="relative h-60 bg-slate-100 overflow-hidden">
+                        <img src="${book.image}" alt="${book.title}" onerror="this.src='https://placehold.co/400x600/e2e8f0/64748b?text=Book'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-md text-indigo-700 shadow-sm">
+                            ${book.category}
+                        </span>
+                        <div class="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold ${book.stock > 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'} shadow-sm">
+                            ${book.stock > 0 ? `${book.stock} in stock` : 'Out of Stock'}
+                        </div>
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base line-clamp-1 group-hover:text-indigo-600 transition-colors" title="${book.title}">${book.title}</h3>
+                            <p class="text-xs text-slate-500 mt-1 mb-3">by ${book.author}</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                            <span class="text-lg font-bold text-indigo-600">₹${Number(book.price).toFixed(2)}</span>
+                            <button onclick="addToCart(${book.id})" ${book.stock <= 0 ? 'disabled' : ''} class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-xl text-xs shadow-sm transition-all flex items-center space-x-1.5">
+                                <i class="fa-solid fa-cart-plus"></i>
+                                <span>Add</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(category) {
+            state.currentCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase() === category.toLowerCase()) {
+                    btn.className = "category-btn px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white shadow-sm transition-all";
+                } else {
+                    btn.className = "category-btn px-4 py-2 rounded-xl text-sm font-medium bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all";
+                }
+            });
+            renderCatalog();
+        }
+
+        function handleSearch(q) {
+            state.searchQuery = q;
+            renderCatalog();
+        }
+
+        // Cart Management
+        async function addToCart(bookId) {
+            const books = await ApiClient.getBooks();
+            const book = books.find(b => b.id === bookId);
+            if (!book || book.stock <= 0) {
+                showToast("Book is out of stock!", "error");
+                return;
+            }
+
+            const existing = state.cart.find(item => item.id === bookId);
+            if (existing) {
+                if (existing.quantity < book.stock) {
+                    existing.quantity++;
+                } else {
+                    showToast("Cannot exceed available stock!", "error");
+                    return;
+                }
+            } else {
+                state.cart.push({ ...book, quantity: 1 });
+            }
+
+            saveFrontendSession();
+            renderCartBadge();
+            showToast(`Added "${book.title}" to cart!`);
+        }
+
+        function renderCartBadge() {
+            const total = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartBadge').innerText = total;
+        }
+
+        function toggleCartModal(show) {
+            const modal = document.getElementById('cartModal');
+            if (show) {
+                renderCartItems();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function renderCartItems() {
+            const container = document.getElementById('cartItemsList');
+            const subtotalEl = document.getElementById('cartSubtotal');
+            const totalEl = document.getElementById('cartTotal');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+
+            if (state.cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                        </div>
+                        <p class="text-slate-600 font-medium">Your cart is empty</p>
+                    </div>
+                `;
+                subtotalEl.innerText = "₹0.00";
+                totalEl.innerText = "₹0.00";
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            checkoutBtn.disabled = false;
+            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            let subtotal = 0;
+            container.innerHTML = state.cart.map(item => {
+                subtotal += item.price * item.quantity;
+                return `
+                    <div class="flex items-center space-x-4 py-4">
+                        <img src="${item.image}" alt="${item.title}" class="w-16 h-20 object-cover rounded-xl border border-slate-200">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-slate-800 text-sm truncate">${item.title}</h4>
+                            <p class="text-xs text-indigo-600 font-semibold mt-0.5">₹${Number(item.price).toFixed(2)}</p>
+                            <div class="flex items-center space-x-3 mt-2">
+                                <div class="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+                                    <button onclick="updateCartQty(${item.id}, -1)" class="px-2.5 py-1 text-slate-600 hover:bg-slate-100">-</button>
+                                    <span class="px-3 text-xs font-bold text-slate-800">${item.quantity}</span>
+                                    <button onclick="updateCartQty(${item.id}, 1)" class="px-2.5 py-1 text-slate-600 hover:bg-slate-100">+</button>
+                                </div>
+                                <button onclick="removeFromCart(${item.id})" class="text-rose-500 hover:text-rose-700 text-xs font-medium">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            subtotalEl.innerText = `₹${subtotal.toFixed(2)}`;
+            totalEl.innerText = `₹${subtotal.toFixed(2)}`;
+        }
+
+        async function updateCartQty(bookId, delta) {
+            const item = state.cart.find(i => i.id === bookId);
+            const books = await ApiClient.getBooks();
+            const book = books.find(b => b.id === bookId);
+            if (!item) return;
+
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) {
+                removeFromCart(bookId);
+                return;
+            }
+            if (newQty > book.stock) {
+                showToast("Cannot exceed available stock!", "error");
+                return;
+            }
+            item.quantity = newQty;
+            saveFrontendSession();
+            renderCartItems();
+            renderCartBadge();
+        }
+
+        function removeFromCart(bookId) {
+            state.cart = state.cart.filter(i => i.id !== bookId);
+            saveFrontendSession();
+            renderCartItems();
+            renderCartBadge();
+            showToast("Item removed from cart");
+        }
+
+        // Checkout Process
+        async function checkoutOrder() {
+            if (!state.currentUser) {
+                toggleCartModal(false);
+                openAuthModal('login');
+                showToast("Please login to complete your order", "error");
+                return;
+            }
+
+            if (state.cart.length === 0) return;
+
+            let total = 0;
+            for (let item of state.cart) {
+                total += item.price * item.quantity;
+                const books = await ApiClient.getBooks();
+                const book = books.find(b => b.id === item.id);
+                if (book) {
+                    await ApiClient.updateStock(book.id, Math.max(0, book.stock - item.quantity));
+                }
+            }
+
+            await ApiClient.createOrder({
+                userId: state.currentUser.id,
+                userName: state.currentUser.name || state.currentUser.email,
+                items: [...state.cart],
+                total: total
+            });
+
+            state.cart = [];
+            saveFrontendSession();
+            renderCartBadge();
+            toggleCartModal(false);
+            showToast("Order placed successfully!");
+            switchView('orders');
+        }
+
+        // Render Orders
+        async function renderOrders() {
+            const container = document.getElementById('ordersContainer');
+            const orders = await ApiClient.getOrders(state.currentUser.id, state.currentUser.role === 'admin');
+
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 bg-white rounded-2xl border border-slate-200">
+                        <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <p class="text-slate-600 font-medium">No orders found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                        <div>
+                            <span class="font-bold text-slate-900">${order.id}</span>
+                            <span class="text-xs text-slate-400 block sm:inline sm:ml-3">Placed on ${order.date}</span>
+                            ${state.currentUser.role === 'admin' ? `<span class="block sm:inline sm:ml-3 text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold">Customer ID: ${order.userId}</span>` : ''}
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 font-semibold text-xs rounded-full inline-flex items-center w-fit">
+                            <i class="fa-solid fa-circle-check mr-1.5"></i> Completed
+                        </span>
+                    </div>
+                    <div class="space-y-2">
+                        ${order.items.map(item => `
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-slate-700 font-medium">${item.quantity}x ${item.title}</span>
+                                <span class="text-slate-900 font-bold">₹${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex justify-between items-center font-bold text-base">
+                        <span class="text-slate-600">Total Amount</span>
+                        <span class="text-indigo-600">₹${order.total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Authentication Handlers
+        function openAuthModal(mode = 'login') {
+            setAuthTab(mode);
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function setAuthTab(mode) {
+            state.authMode = mode;
+            const title = document.getElementById('authModalTitle');
+            const btn = document.getElementById('authSubmitBtn');
+            const nameGroup = document.getElementById('registerNameGroup');
+            const tabLogin = document.getElementById('tabLoginBtn');
+            const tabRegister = document.getElementById('tabRegisterBtn');
+
+            if (mode === 'login') {
+                title.innerText = "Welcome Back";
+                btn.innerText = "Sign In";
+                nameGroup.classList.add('hidden');
+                document.getElementById('authName').required = false;
+                tabLogin.className = "py-2 rounded-lg bg-white text-indigo-600 shadow-sm transition-all";
+                tabRegister.className = "py-2 rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+            } else {
+                title.innerText = "Create Account";
+                btn.innerText = "Register Account";
+                nameGroup.classList.remove('hidden');
+                document.getElementById('authName').required = true;
+                tabRegister.className = "py-2 rounded-lg bg-white text-indigo-600 shadow-sm transition-all";
+                tabLogin.className = "py-2 rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const name = document.getElementById('authName').value.trim();
+
+            try {
+                if (state.authMode === 'login') {
+                    const user = await ApiClient.login(email, password);
+                    state.currentUser = user;
+                    showToast(`Welcome back, ${user.name || user.email}!`);
+                } else {
+                    const user = await ApiClient.register(name, email, password);
+                    state.currentUser = user;
+                    showToast("Account registered and logged in!");
+                }
+                saveFrontendSession();
+                updateNavbarState();
+                closeAuthModal();
+                switchView('catalog');
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        }
+
+        function updateNavbarState() {
+            const userSection = document.getElementById('userAccountSection');
+            const adminNav = document.getElementById('adminNavContainer');
+            const navOrdersBtn = document.getElementById('navOrdersBtn');
+
+            if (state.currentUser) {
+                navOrdersBtn.classList.remove('hidden');
+                navOrdersBtn.classList.add('flex');
+                if (state.currentUser.role === 'admin') {
+                    adminNav.classList.remove('hidden');
+                } else {
+                    adminNav.classList.add('hidden');
+                }
+                userSection.innerHTML = `
+                    <button onclick="logout()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
+                `;
+            } else {
+                navOrdersBtn.classList.add('hidden');
+                navOrdersBtn.classList.remove('flex');
+                adminNav.classList.add('hidden');
+                userSection.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all flex items-center space-x-2">
+                        <i class="fa-regular fa-user"></i>
+                        <span>Login</span>
+                    </button>
+                `;
+            }
+        }
+
+        function logout() {
+            state.currentUser = null;
+            saveFrontendSession();
+            updateNavbarState();
+            switchView('catalog');
+            showToast("Logged out successfully");
+        }
+
+        // Admin Dashboard & Inventory
+        async function renderAdminDashboard() {
+            const books = await ApiClient.getBooks();
+            const orders = JSON.parse(localStorage.getItem('db_orders')) || [];
+            
+            document.getElementById('statTotalBooks').innerText = books.length;
+            document.getElementById('statTotalStock').innerText = books.reduce((sum, b) => sum + b.stock, 0);
+            document.getElementById('statTotalOrders').innerText = orders.length;
+
+            const tbody = document.getElementById('adminInventoryTableBody');
+            tbody.innerHTML = books.map(book => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-4 px-6 flex items-center space-x-3">
+                        <img src="${book.image}" alt="${book.title}" class="w-10 h-12 object-cover rounded-lg border border-slate-200">
+                        <div>
+                            <p class="font-bold text-slate-800 line-clamp-1">${book.title}</p>
+                            <p class="text-xs text-slate-400">by ${book.author}</p>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">${book.category}</span>
+                    </td>
+                    <td class="py-4 px-6 font-semibold text-slate-700">$${Number(book.price).toFixed(2)}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold ${book.stock > 5 ? 'text-slate-800' : 'text-rose-600'}">${book.stock}</span>
+                            <div class="flex space-x-1">
+                                <button onclick="adjustAdminStock(${book.id}, -1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">-</button>
+                                <button onclick="adjustAdminStock(${book.id}, 1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">+</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <button onclick="removeAdminBook(${book.id})" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-all" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function adjustAdminStock(bookId, delta) {
+            const books = await ApiClient.getBooks();
+            const book = books.find(b => b.id === bookId);
+            if (book) {
+                const newStock = Math.max(0, book.stock + delta);
+                await ApiClient.updateStock(bookId, newStock);
+                await renderAdminDashboard();
+                showToast(`Updated stock for "${book.title}"`);
+            }
+        }
+
+        async function removeAdminBook(bookId) {
+            if (confirm("Are you sure you want to delete this book?")) {
+                await ApiClient.deleteBook(bookId);
+                await renderAdminDashboard();
+                showToast("Book deleted from backend database");
+            }
+        }
+
+        function openAddBookModal() {
+            document.getElementById('addBookModal').classList.remove('hidden');
+        }
+
+        function closeAddBookModal() {
+            document.getElementById('addBookModal').classList.add('hidden');
+        }
+
+        async function handleAddNewBook(e) {
+            e.preventDefault();
+            const title = document.getElementById('newTitle').value.trim();
+            const author = document.getElementById('newAuthor').value.trim();
+            const category = document.getElementById('newCategory').value;
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const stock = parseInt(document.getElementById('newStock').value);
+            let image = document.getElementById('newImage').value.trim();
+
+            if (!image) {
+                image = `https://placehold.co/400x600/4f46e5/ffffff?text=${encodeURIComponent(title.substring(0, 15))}`;
+            }
+
+            await ApiClient.addBook({ title, author, category, price, stock, image });
+            closeAddBookModal();
+            await renderAdminDashboard();
+            showToast(`Successfully added "${title}" to backend!`);
+            e.target.reset();
+        }
+    </script>
+</body>
+</html>
